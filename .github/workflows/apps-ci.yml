@@ -1,0 +1,87 @@
+name: Apps CI (boundary)
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "apps/**"
+      - ".github/workflows/apps-ci.yml"
+  pull_request:
+    paths:
+      - "apps/**"
+      - ".github/workflows/apps-ci.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: apps-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  apps:
+    name: ${{ matrix.name }} (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20]
+        include:
+          - name: apps/al-azan
+            path: apps/al-azan
+          # NOTE: other apps are currently non-Node/inactive (no package.json),
+          # and will be included once they become Node-managed again.
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+
+      - name: Detect package manager
+        id: pm
+        shell: bash
+        working-directory: ${{ matrix.path }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -f "package.json" ]; then
+            echo "has_node=false" >> "$GITHUB_OUTPUT"
+            echo "No package.json found — skipping."
+            exit 0
+          fi
+
+          echo "has_node=true" >> "$GITHUB_OUTPUT"
+
+          if [ -f "pnpm-lock.yaml" ]; then echo "manager=pnpm" >> "$GITHUB_OUTPUT"; exit 0; fi
+          if [ -f "yarn.lock" ]; then echo "manager=yarn" >> "$GITHUB_OUTPUT"; exit 0; fi
+          echo "manager=npm" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        if: steps.pm.outputs.has_node == 'true'
+        shell: bash
+        working-directory: ${{ matrix.path }}
+        run: |
+          set -euo pipefail
+          MANAGER="${{ steps.pm.outputs.manager }}"
+
+          if [ "$MANAGER" = "pnpm" ]; then corepack enable; pnpm install --frozen-lockfile; exit 0; fi
+          if [ "$MANAGER" = "yarn" ]; then corepack enable; if [ -f ".yarnrc.yml" ]; then yarn install --immutable; else yarn install --frozen-lockfile; fi; exit 0; fi
+          if [ -f "package-lock.json" ] || [ -f "npm-shrinkwrap.json" ]; then npm ci; else npm install; fi
+
+      - name: Build (if present)
+        if: steps.pm.outputs.has_node == 'true'
+        shell: bash
+        working-directory: ${{ matrix.path }}
+        run: |
+          set -euo pipefail
+          if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.build ? 0 : 1)"; then
+            MANAGER="${{ steps.pm.outputs.manager }}"
+            if [ "$MANAGER" = "pnpm" ]; then pnpm run build; fi
+            if [ "$MANAGER" = "yarn" ]; then yarn run build; fi
+            if [ "$MANAGER" = "npm" ]; then npm run build; fi
+          else
+            echo "No build script; skipping."
+          fi
