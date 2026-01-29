@@ -70,16 +70,3 @@ This API data source comes from the combination of several parameters from [api.
 
 ### LICENSE
 MIT
-
-### Support Me
-
-#### Global
-[![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/B0B71P7PB)
-
-#### Indonesia
-- [Yapp](https://yapp.ink/gading)
-- [Trakteer](https://trakteer.id/gadingnst)
-- [Karyakarsa](https://karyakarsa.com/gadingnst)
-
----
-Copyright © 2020 by Sutan Gading Fadhillah Nasution
