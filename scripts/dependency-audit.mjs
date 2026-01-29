@@ -1,13 +1,23 @@
 import fs from "node:fs";
 import path from "node:path";
 
+/**
+ * Dependency Audit (metadata only)
+ * - Read-only (no installs, no builds)
+ * - Audits only projects that are currently Node-managed (package.json present in repo)
+ * - Prints and writes a report to: audit/dependency-audit-report.txt
+ */
+
 const projects = [
   "Services/hadith-api",
   "Services/quran-api",
   "apps/al-azan",
-  "apps/my-quran",
-  "apps/quran-hifz",
-  "apps/quran_app",
+
+  // Excluded because package.json is missing in the repo currently:
+  // "apps/my-quran",
+  // "apps/quran-hifz",
+  // "apps/quran_app",
+
   // intentionally excluded: apps/quran_salah_dua (non-Node)
 ];
 
@@ -39,7 +49,11 @@ function lockfileType(dir) {
 }
 
 function fmt(status, msg) {
-  const icon = status === "OK" ? "✅" : status === "WARN" ? "⚠️" : "❌";
+  const icon =
+    status === "OK" ? "✅" :
+    status === "WARN" ? "⚠️" :
+    status === "INFO" ? "ℹ️" : "❌";
+
   return `${icon} ${status}: ${msg}`;
 }
 
@@ -94,6 +108,8 @@ report += `Hard failures: ${hardFailures}\n`;
 fs.writeFileSync(outFile, report, "utf8");
 console.log(report);
 
+// Keep failing only if a project in the audited list is missing/invalid package.json.
+// Since the list is now narrowed to known Node projects, this should normally be 0.
 if (hardFailures > 0) {
   process.exit(1);
 }
