@@ -14,6 +14,11 @@ This repository brings together multiple previously independent projects into a 
 
 ---
 
+
+
+
+
+
 ## Repository Structure
 
 islamic-apps-monorepo/
@@ -29,6 +34,20 @@ islamic-apps-monorepo/
 │ └── quran_salah_dua
 │
 └── README.md
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ---
