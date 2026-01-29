@@ -48,12 +48,8 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
-          cache: npm
-          cache-dependency-path: |
-            ${{ matrix.path }}/package-lock.json
-            ${{ matrix.path }}/npm-shrinkwrap.json
-            ${{ matrix.path }}/yarn.lock
-            ${{ matrix.path }}/pnpm-lock.yaml
+
+       
 
       - name: Detect package manager
         id: pm
