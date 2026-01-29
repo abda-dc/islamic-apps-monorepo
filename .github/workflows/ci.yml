@@ -49,14 +49,21 @@ jobs:
         with:
           node-version: ${{ matrix.node }}
 
-       
-
       - name: Detect package manager
         id: pm
         shell: bash
         working-directory: ${{ matrix.path }}
         run: |
           set -euo pipefail
+
+          # If this project is not Node-managed (no package.json), skip Node steps safely.
+          if [ ! -f "package.json" ]; then
+            echo "has_node=false" >> "$GITHUB_OUTPUT"
+            echo "No package.json found in $PWD — skipping Node install/build/test."
+            exit 0
+          fi
+
+          echo "has_node=true" >> "$GITHUB_OUTPUT"
 
           if [ -f "pnpm-lock.yaml" ]; then
             echo "manager=pnpm" >> "$GITHUB_OUTPUT"
@@ -71,6 +78,7 @@ jobs:
           echo "manager=npm" >> "$GITHUB_OUTPUT"
 
       - name: Install dependencies
+        if: steps.pm.outputs.has_node == 'true'
         shell: bash
         working-directory: ${{ matrix.path }}
         run: |
@@ -90,14 +98,17 @@ jobs:
             corepack enable
             yarn --version
 
+            # Yarn Berry uses yarnrc.yml and supports --immutable
             if [ -f ".yarnrc.yml" ]; then
               yarn install --immutable
             else
+              # Yarn classic
               yarn install --frozen-lockfile
             fi
             exit 0
           fi
 
+          # npm
           if [ -f "package-lock.json" ] || [ -f "npm-shrinkwrap.json" ]; then
             npm ci
           else
@@ -105,6 +116,7 @@ jobs:
           fi
 
       - name: Build (if present)
+        if: steps.pm.outputs.has_node == 'true'
         shell: bash
         working-directory: ${{ matrix.path }}
         run: |
@@ -121,6 +133,7 @@ jobs:
           fi
 
       - name: Test (if present)
+        if: steps.pm.outputs.has_node == 'true'
         shell: bash
         working-directory: ${{ matrix.path }}
         run: |
