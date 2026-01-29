@@ -112,8 +112,3 @@ You **CANNOT** use and distribute the app icon in anyway, except for **Noor Ul H
 
 Remember in your special prayers.
 
-## Contact Us
-
-**Telegram:** [https://t.me/NoorUlHudaApp](https://t.me/NoorUlHudaApp)  
-**XDA Thread:** [https://forum.xda-developers.com...](https://forum.xda-developers.com/t/app-7-0-noor-ul-huda-nur-alxd-quran-reader-prayer-time-and-duas-app.4306203/)  
-**Email:** [mirfatif.dev@gmail.com](mailto:mirfatif.dev@gmail.com)
