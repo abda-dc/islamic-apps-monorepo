@@ -50,16 +50,3 @@ Already deployed in [https://api.hadith.gading.dev] or you can deploy your own a
 
 ### LICENSE
 MIT
-
-## Support or Donate Me
-
-### Global
-[![ko-fi](https://www.ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/B0B71P7PB)
-
-### Indonesia
-- Bank Syariah Mandiri [REK: 7142365973 (SUTAN GADING F NASUTION)]
-- [Trakteer](https://trakteer.id/gadingnst)
-- [Karyakarsa](https://karyakarsa.com/gadingnst)
-
----
-Copyright © 2020 by Sutan Gading Fadhillah Nasution
