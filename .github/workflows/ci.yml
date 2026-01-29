@@ -1,0 +1,141 @@
+name: CI (baseline)
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-baseline-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: ${{ matrix.name }} (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [18, 20]
+        include:
+          # Services (MIT)
+          - name: Services/hadith-api
+            path: Services/hadith-api
+          - name: Services/quran-api
+            path: Services/quran-api
+
+          # Apps (AGPL-3.0)
+          - name: apps/al-azan
+            path: apps/al-azan
+          - name: apps/my-quran
+            path: apps/my-quran
+          - name: apps/quran-hifz
+            path: apps/quran-hifz
+          - name: apps/quran_app
+            path: apps/quran_app
+          - name: apps/quran_salah_dua
+            path: apps/quran_salah_dua
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: |
+            ${{ matrix.path }}/package-lock.json
+            ${{ matrix.path }}/npm-shrinkwrap.json
+            ${{ matrix.path }}/yarn.lock
+            ${{ matrix.path }}/pnpm-lock.yaml
+
+      - name: Detect package manager
+        id: pm
+        shell: bash
+        working-directory: ${{ matrix.path }}
+        run: |
+          set -euo pipefail
+
+          if [ -f "pnpm-lock.yaml" ]; then
+            echo "manager=pnpm" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ -f "yarn.lock" ]; then
+            echo "manager=yarn" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "manager=npm" >> "$GITHUB_OUTPUT"
+
+      - name: Install dependencies
+        shell: bash
+        working-directory: ${{ matrix.path }}
+        run: |
+          set -euo pipefail
+
+          MANAGER="${{ steps.pm.outputs.manager }}"
+          echo "Using package manager: $MANAGER"
+
+          if [ "$MANAGER" = "pnpm" ]; then
+            corepack enable
+            pnpm --version
+            pnpm install --frozen-lockfile
+            exit 0
+          fi
+
+          if [ "$MANAGER" = "yarn" ]; then
+            corepack enable
+            yarn --version
+
+            if [ -f ".yarnrc.yml" ]; then
+              yarn install --immutable
+            else
+              yarn install --frozen-lockfile
+            fi
+            exit 0
+          fi
+
+          if [ -f "package-lock.json" ] || [ -f "npm-shrinkwrap.json" ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Build (if present)
+        shell: bash
+        working-directory: ${{ matrix.path }}
+        run: |
+          set -euo pipefail
+
+          if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.build ? 0 : 1)"; then
+            MANAGER="${{ steps.pm.outputs.manager }}"
+            echo "Running build with: $MANAGER"
+            if [ "$MANAGER" = "pnpm" ]; then pnpm run build; fi
+            if [ "$MANAGER" = "yarn" ]; then yarn run build; fi
+            if [ "$MANAGER" = "npm" ]; then npm run build; fi
+          else
+            echo "No build script; skipping."
+          fi
+
+      - name: Test (if present)
+        shell: bash
+        working-directory: ${{ matrix.path }}
+        run: |
+          set -euo pipefail
+
+          if node -e "const p=require('./package.json'); process.exit(p.scripts && p.scripts.test ? 0 : 1)"; then
+            MANAGER="${{ steps.pm.outputs.manager }}"
+            echo "Running tests with: $MANAGER"
+            if [ "$MANAGER" = "pnpm" ]; then pnpm test; fi
+            if [ "$MANAGER" = "yarn" ]; then yarn test; fi
+            if [ "$MANAGER" = "npm" ]; then npm test; fi
+          else
+            echo "No test script; skipping."
+          fi
